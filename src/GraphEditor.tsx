@@ -443,12 +443,16 @@ function GraphEditorInner({
         }));
       }
       if (changes.some((change) => change.type === 'dimensions')) {
-        setNodeMeasurements((current) => ({
-          ...current,
-          ...Object.fromEntries(
-            moved.flatMap((node) => (node.measured ? [[node.id, node.measured]] : []))
-          )
-        }));
+        const measurements = Object.fromEntries(
+          moved.flatMap((node) => (node.measured ? [[node.id, node.measured]] : []))
+        );
+        setNodeMeasurements((current) => {
+          const unchanged = Object.entries(measurements).every(
+            ([id, measurement]) =>
+              current[id]?.width === measurement.width && current[id]?.height === measurement.height
+          );
+          return unchanged ? current : { ...current, ...measurements };
+        });
       }
       const next = {
         ...graph,

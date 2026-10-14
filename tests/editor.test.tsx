@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { GraphEditor } from '../src/GraphEditor';
+import { addNode, createGraph } from '../src/graph';
 
 vi.mock('@xyflow/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xyflow/react')>();
@@ -9,15 +10,12 @@ vi.mock('@xyflow/react', async (importOriginal) => {
     ...actual,
     ReactFlowProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useReactFlow: () => ({ fitView: () => Promise.resolve(true) }),
-    ReactFlow: ({ nodes }: { nodes: Array<{ id: string; type?: string }> }) => (
-      <div>
-        {nodes.map((node) => (
-          <span key={node.id} data-testid="node-renderer-type">
-            {node.type}
-          </span>
-        ))}
-      </div>
-    ),
+    ReactFlow: ({ nodes, onNodesChange }: { nodes: Array<{ id: string; type?: string }>; onNodesChange: (changes: Array<{ type: 'dimensions'; id: string; dimensions: { width: number; height: number }; resizing: false }>) => void }) => {
+      React.useEffect(() => {
+        onNodesChange(nodes.map((node) => ({ type: 'dimensions', id: node.id, dimensions: { width: 200, height: 100 }, resizing: false })));
+      }, [nodes, onNodesChange]);
+      return <div>{nodes.map((node) => <span key={node.id} data-testid="node-renderer-type">{node.type}</span>)}</div>;
+    },
     Background: () => null,
     Controls: () => null,
     MiniMap: () => null
@@ -49,5 +47,16 @@ describe('GraphEditor', () => {
     expect(screen.getByRole('dialog', { name: 'Export graph' })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+  it('does not update node measurements repeatedly when React Flow reports unchanged dimensions', () => {
+    const graph = addNode(createGraph('workflow'), {
+      id: 'node', title: 'Node', position: { x: 0, y: 0 }, connectors: []
+    });
+    const { container } = render(
+      <div style={{ width: 1000, height: 700 }}>
+        <GraphEditor graph={graph} showPalette={false} showInspector={false} />
+      </div>
+    );
+    expect(container.querySelector('.ionodes-canvas-count')).toHaveTextContent('1 nodes · 0 connections');
   });
 });
