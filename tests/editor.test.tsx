@@ -10,10 +10,11 @@ vi.mock('@xyflow/react', async (importOriginal) => {
     ...actual,
     ReactFlowProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useReactFlow: () => ({ fitView: () => Promise.resolve(true) }),
-    ReactFlow: ({ nodes, onNodesChange }: { nodes: Array<{ id: string; type?: string }>; onNodesChange: (changes: Array<{ type: 'dimensions'; id: string; dimensions: { width: number; height: number }; resizing: false }>) => void }) => {
+    ReactFlow: ({ nodes, onNodesChange, onSelectionChange }: { nodes: Array<{ id: string; type?: string; selected?: boolean }>; onSelectionChange: (selection: { nodes: Array<{ id: string; selected?: boolean }>; edges: Array<{ id: string }> }) => void; onNodesChange: (changes: Array<{ type: 'dimensions'; id: string; dimensions: { width: number; height: number }; resizing: false }>) => void }) => {
       React.useEffect(() => {
         onNodesChange(nodes.map((node) => ({ type: 'dimensions', id: node.id, dimensions: { width: 200, height: 100 }, resizing: false })));
-      }, [nodes, onNodesChange]);
+        onSelectionChange({ nodes: nodes.filter((node) => node.selected), edges: [] });
+      }, [nodes, onNodesChange, onSelectionChange]);
       return <div>{nodes.map((node) => <span key={node.id} data-testid="node-renderer-type">{node.type}</span>)}</div>;
     },
     Background: () => null,
@@ -48,7 +49,7 @@ describe('GraphEditor', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
-  it('does not feed React Flow dimension measurements back into controlled nodes', () => {
+  it('does not loop when React Flow repeats an empty selection notification', () => {
     const graph = addNode(createGraph('workflow'), {
       id: 'node', title: 'Node', position: { x: 0, y: 0 }, connectors: []
     });

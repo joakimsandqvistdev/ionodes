@@ -607,11 +607,17 @@ function GraphEditorInner({
       previousFocus?.focus();
     };
   }, [showJson]);
-  const handleSelection = (nodes: Node[], edges: Edge[]) => {
+  const handleSelection = useCallback(({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
     const next = { nodeIds: nodes.map((n) => n.id), connectionIds: edges.map((e) => e.id) };
+    const selectionUnchanged =
+      selection.nodeIds.length === next.nodeIds.length &&
+      selection.nodeIds.every((id, index) => id === next.nodeIds[index]) &&
+      selection.connectionIds.length === next.connectionIds.length &&
+      selection.connectionIds.every((id, index) => id === next.connectionIds[index]);
+    if (selectionUnchanged) return;
     setSelection(next);
     onSelectionChange?.(next);
-  };
+  }, [selection.nodeIds, selection.connectionIds, onSelectionChange]);
   const exportJson = () => {
     try {
       const value = serializeGraph(graph);
@@ -759,7 +765,7 @@ function GraphEditorInner({
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={handleConnect}
-            onSelectionChange={({ nodes, edges }) => handleSelection(nodes, edges)}
+            onSelectionChange={handleSelection}
             fitView
             fitViewOptions={{ padding: 0.25 }}
             deleteKeyCode={null}
