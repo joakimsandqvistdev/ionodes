@@ -92,6 +92,8 @@ export type GraphEditorCanvas = {
   background?: ReactNode;
   controls?: ReactNode;
   miniMap?: ReactNode;
+  /** Hide React Flow's attribution link. The xyflow team encourages supporting its maintenance when doing so. */
+  hideAttribution?: boolean;
   backgroundColor?: string;
   backgroundGap?: number;
   backgroundSize?: number;
@@ -122,6 +124,8 @@ export type GraphEditorProps = {
   theme?: GraphEditorTheme;
   /** Replaces the default canvas, grid, controls and minimap settings. */
   canvas?: GraphEditorCanvas;
+  /** Show the bottom status bar. Defaults to true. */
+  showStatusBar?: boolean;
   /** Replace any built-in icon. Omitted entries keep their defaults. */
   icons?: GraphEditorIcons;
   /** Render graph-provided icon descriptor names as React elements. */
@@ -300,6 +304,7 @@ function GraphEditorInner({
   renderConnectorLabel,
   showValidationMessages = true,
   showErrorMessages = true,
+  showStatusBar = true,
   renderMessage,
   messageClassNames,
   graphTitle
@@ -802,6 +807,7 @@ function GraphEditorInner({
             onEdgesChange={onEdgesChange}
             onConnect={handleConnect}
             onSelectionChange={handleSelection}
+            proOptions={canvas.hideAttribution ? { hideAttribution: true } : undefined}
             fitView
             fitViewOptions={{ padding: 0.25 }}
             deleteKeyCode={null}
@@ -900,16 +906,18 @@ function GraphEditorInner({
             onChange={loadFile}
           />
         </section>
-        <footer className="ionodes-status">
-          <span>
-            {selectedNode
-              ? `Selected: ${selectedNode.title}`
-              : 'Select a node or connection to inspect it'}
-          </span>
-          <span>
-            Pan: drag canvas <i /> Zoom: scroll <i /> Fit: {icons['fit-shortcut'] ?? '⌘'}0
-          </span>
-        </footer>
+        {showStatusBar && (
+          <footer className="ionodes-status">
+            <span>
+              {selectedNode
+                ? `Selected: ${selectedNode.title}`
+                : 'Select a node or connection to inspect it'}
+            </span>
+            <span>
+              Pan: drag canvas <i /> Zoom: scroll <i /> Fit: {icons['fit-shortcut'] ?? '⌘'}0
+            </span>
+          </footer>
+        )}
       </main>
       {showInspector && (
         <aside className="ionodes-sidebar ionodes-inspector" aria-label="Properties inspector">

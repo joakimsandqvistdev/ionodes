@@ -61,6 +61,7 @@ describe('GraphEditor', () => {
     );
     expect(screen.getByRole('region', { name: 'Graph canvas' })).toBeInTheDocument();
     expect(container.querySelector('.ionodes-canvas-label')).toHaveTextContent('Demo graph');
+    expect(container.querySelector('.ionodes-status')).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: 'Node palette' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }));
     expect(screen.getByText('1 nodes · 0 connections')).toBeInTheDocument();
@@ -77,6 +78,15 @@ describe('GraphEditor', () => {
     expect(screen.getByRole('dialog', { name: 'Export graph' })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+  it('can hide the bottom status bar', () => {
+    const { container } = render(
+      <div style={{ width: 1000, height: 700 }}>
+        <GraphEditor showStatusBar={false} showPalette={false} showInspector={false} />
+      </div>
+    );
+
+    expect(container.querySelector('.ionodes-status')).not.toBeInTheDocument();
   });
   it('retains measured dimensions and does not loop on repeated empty selection notifications', () => {
     const graph = addNode(createGraph('workflow'), {
