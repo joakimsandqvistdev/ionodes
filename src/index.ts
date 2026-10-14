@@ -1,8 +1,11 @@
 export { GraphEditor } from './GraphEditor';
 export type {
   EditorIconName,
+  EditorMessage,
+  EditorMessageKind,
   GraphEditorCanvas,
   GraphEditorIcons,
+  GraphEditorMessageClassNames,
   GraphEditorProps,
   GraphEditorTheme,
   GraphNodeRendererData,

@@ -12,7 +12,48 @@ For controlled state, pass `graph` and update it from `onChange`:
 <GraphEditor graph={graph} onChange={setGraph} onSelectionChange={setSelection} />
 ```
 
-Props include `palette`, `validateConnection`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, and `renderConnectorLabel`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+Props include `palette`, `validateConnection`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, `renderConnectorLabel`, `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+
+## Validation and error messages
+
+Validation feedback and editor error feedback are enabled by default. Hide either category independently with `showValidationMessages={false}` or `showErrorMessages={false}`. Hiding validation feedback does not disable connection validation; invalid connections remain invalid.
+
+`renderMessage` receives a discriminated `EditorMessage`: `{ kind: 'validation', issue }` for a `GraphIssue`, or `{ kind: 'error', message }` for editor errors. It may return text or any React node. Return `null` to suppress that particular message. These types are exported from `ionodes`.
+
+```tsx
+import { GraphEditor, type EditorMessage } from 'ionodes';
+
+const renderMessage = (message: EditorMessage) => {
+  if (message.kind === 'validation') {
+    return <strong>{message.issue.message}</strong>;
+  }
+  return <span>Editor error: {message.message}</span>;
+};
+
+<GraphEditor
+  defaultGraph={graph}
+  className="my-editor"
+  showValidationMessages
+  showErrorMessages
+  renderMessage={renderMessage}
+  messageClassNames={{ validation: 'my-validation', error: 'my-error' }}
+/>;
+```
+
+`messageClassNames` attaches consumer-defined classes to the built-in message containers, in addition to `.ionodes-validation` and `.ionodes-toast`. Scope CSS under the editor's `className` to style just that instance:
+
+```css
+.my-editor .my-validation {
+  color: #8a4b08;
+  background: #fff4d6;
+}
+.my-editor .my-error {
+  color: #8b1e1e;
+  background: #ffe3e3;
+}
+```
+
+`renderMessage` and the visibility props apply to feedback rendered by `GraphEditor`. Exceptions from graph helper functions used directly by the consuming app remain the consumer's responsibility.
 
 ## Theme and canvas
 

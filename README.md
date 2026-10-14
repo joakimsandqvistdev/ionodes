@@ -84,9 +84,60 @@ The `canvas` prop configures or replaces the React Flow background, controls, an
 
 The `icons` keys are `node`, `validation`, `palette-add`, `undo`, `redo`, `delete`, `connector-add`, `connector-remove`, `export`, `import`, `close`, `selection-node`, `selection-connection`, `empty-graph`, `data-export`, `data-import`, `dismiss`, `error`, `input-add`, `output-add`, `connection`, `selection-empty`, `input-direction`, `output-direction`, and `fit-shortcut`. Omitted entries keep the default symbol. The customization types are exported from the package entry point.
 
+### Validation and error messages
+
+Validation feedback and editor errors can be hidden independently. Hiding validation feedback does not disable validation or allow an invalid connection:
+
+```tsx
+<GraphEditor defaultGraph={graph} showValidationMessages={false} showErrorMessages={false} />
+```
+
+Use `renderMessage` to replace message content with text or any React element. Validation messages include the full `GraphIssue` (including its `message` and affected `elementId`); error messages include the original error text. Return `null` to suppress one message while leaving the other messages visible:
+
+```tsx
+import { GraphEditor, type EditorMessage } from 'ionodes';
+
+function renderMessage(message: EditorMessage) {
+  if (message.kind === 'validation') {
+    return <strong>Connection issue: {message.issue.message}</strong>;
+  }
+  return <span role="alert">Could not complete action: {message.message}</span>;
+}
+
+<GraphEditor defaultGraph={graph} renderMessage={renderMessage} />;
+```
+
+Style the built-in message containers with `className` and the exported `messageClassNames` hooks. The default classes are `.ionodes-validation` and `.ionodes-toast`:
+
+```tsx
+<GraphEditor
+  defaultGraph={graph}
+  className="brand-graph"
+  messageClassNames={{ validation: 'brand-validation', error: 'brand-error' }}
+/>
+```
+
+```css
+.brand-graph .brand-validation {
+  color: #7c2d12;
+  background: #ffedd5;
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+}
+
+.brand-graph .brand-error {
+  color: #7f1d1d;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+}
+```
+
+These controls cover validation feedback and errors displayed by the editor, such as import/export and connection errors. Errors from graph helper functions called directly by the consuming app should be caught and displayed by that app.
+
 ## API
 
-`GraphEditor` accepts `graph` for controlled state or `defaultGraph` for internal state. Use `onChange` to receive graph edits. `palette` supplies React-friendly node creation actions. `validateConnection` can reject a proposed connection with a boolean or an explanatory message. Optional panels can be hidden with `showPalette` and `showInspector`. `onSelectionChange` and `onGraphEvent` expose editor events. `theme`, `canvas`, `icons`, and rendering hooks customize the appearance without changing the persisted graph format.
+`GraphEditor` accepts `graph` for controlled state or `defaultGraph` for internal state. Use `onChange` to receive graph edits. `palette` supplies React-friendly node creation actions. `validateConnection` can reject a proposed connection with a boolean or an explanatory message. Optional panels can be hidden with `showPalette` and `showInspector`. `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames` control feedback visibility, content, and styling. `onSelectionChange` and `onGraphEvent` expose editor events. `theme`, `canvas`, `icons`, and rendering hooks customize the appearance without changing the persisted graph format.
 
 The library exports graph types and immutable helpers including `createGraph`, `addNode`, `removeNode`, `upsertConnector`, `removeConnector`, `addConnection`, `removeConnection`, `validateGraph`, `serializeGraph`, and `deserializeGraph`. See [API and custom nodes](docs/api.md) for the full TypeScript API and extension example.
 

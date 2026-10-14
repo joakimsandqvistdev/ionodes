@@ -16,6 +16,7 @@ import {
   ReactFlowProvider,
   Handle,
   Position,
+  applyEdgeChanges,
   applyNodeChanges,
   useReactFlow,
   type Connection as FlowConnection,
@@ -42,6 +43,7 @@ import {
   type CompatibilityRule,
   type Connector,
   type GraphDocument,
+  type GraphIssue,
   type GraphNode
 } from './graph';
 import { commit, createHistory, redo, undo } from './history';
@@ -82,6 +84,10 @@ export type GraphEditorIcons = Partial<Record<EditorIconName, ReactNode>>;
 export type GraphEditorTheme = CSSProperties & {
   [name: `--ionodes-${string}`]: string | number | undefined;
 };
+export type EditorMessage =
+  { kind: 'validation'; issue: GraphIssue } | { kind: 'error'; message: string };
+export type EditorMessageKind = EditorMessage['kind'];
+export type GraphEditorMessageClassNames = Partial<Record<EditorMessageKind, string>>;
 export type GraphEditorCanvas = {
   background?: ReactNode;
   controls?: ReactNode;
@@ -122,6 +128,14 @@ export type GraphEditorProps = {
   renderGraphIcon?: (name: string, context: 'node' | 'connector') => ReactNode;
   /** Customize connector label content while retaining the built-in React Flow handles. */
   renderConnectorLabel?: (connector: Connector) => ReactNode;
+  /** Hide validation feedback while keeping validation rules active. Defaults to true. */
+  showValidationMessages?: boolean;
+  /** Hide import/export/connection error feedback. Defaults to true. */
+  showErrorMessages?: boolean;
+  /** Replace the visible message content. Return null to suppress an individual message. */
+  renderMessage?: (message: EditorMessage) => ReactNode;
+  /** Add consumer classes to the validation and error message containers. */
+  messageClassNames?: GraphEditorMessageClassNames;
   palette?: PaletteItem[];
   showPalette?: boolean;
   showInspector?: boolean;
@@ -281,7 +295,11 @@ function GraphEditorInner({
   canvas = {},
   icons = {},
   renderGraphIcon,
-  renderConnectorLabel
+  renderConnectorLabel,
+  showValidationMessages = true,
+  showErrorMessages = true,
+  renderMessage,
+  messageClassNames
 }: GraphEditorProps) {
   const [history, setHistory] = useState(() =>
     createHistory(defaultGraph ?? controlledGraph ?? createGraph(createId('graph')))
@@ -313,6 +331,17 @@ function GraphEditorInner({
       }),
     [graph, rule]
   );
+  const validationIssue = issues[0];
+  const validationMessage = validationIssue
+    ? renderMessage
+      ? renderMessage({ kind: 'validation', issue: validationIssue })
+      : validationIssue.message
+    : null;
+  const errorMessage = error
+    ? renderMessage
+      ? renderMessage({ kind: 'error', message: error })
+      : error
+    : null;
   const invalidNodeIds = useMemo(() => {
     const invalid = new Set<string>();
     for (const issue of issues) {
@@ -383,6 +412,7 @@ function GraphEditorInner({
         target: edge.targetNodeId,
         targetHandle: edge.targetConnectorId,
         label: edge.label,
+        selected: selection.connectionIds.includes(edge.id),
         style: {
           stroke: issues.some((issue) => issue.elementId === edge.id)
             ? canvas.invalidConnectionColor || '#f17870'
@@ -391,7 +421,13 @@ function GraphEditorInner({
         },
         animated: false
       })),
-    [graph.connections, issues, canvas.connectionColor, canvas.invalidConnectionColor]
+    [
+      graph.connections,
+      issues,
+      canvas.connectionColor,
+      canvas.invalidConnectionColor,
+      selection.connectionIds
+    ]
   );
   const nodeTypes = useMemo<NodeTypes>(
     () => ({ ionode: GraphNodeView as never, ...customNodeTypes }),
@@ -400,6 +436,12 @@ function GraphEditorInner({
   const onNodesChange = useCallback(
     (changes: Parameters<typeof applyNodeChanges>[0]) => {
       const moved = applyNodeChanges(changes, flowNodes);
+      if (changes.some((change) => change.type === 'select')) {
+        setSelection((current) => ({
+          ...current,
+          nodeIds: moved.filter((node) => node.selected).map((node) => node.id)
+        }));
+      }
       if (changes.some((change) => change.type === 'dimensions')) {
         setNodeMeasurements((current) => ({
           ...current,
@@ -425,6 +467,13 @@ function GraphEditorInner({
   );
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
+      const updatedEdges = applyEdgeChanges(changes, flowEdges);
+      if (changes.some((change) => change.type === 'select')) {
+        setSelection((current) => ({
+          ...current,
+          connectionIds: updatedEdges.filter((edge) => edge.selected).map((edge) => edge.id)
+        }));
+      }
       const removed = changes
         .filter((change) => change.type === 'remove')
         .map((change) => change.id);
@@ -434,7 +483,7 @@ function GraphEditorInner({
         removed.forEach(() => onGraphEvent?.({ type: 'connection-removed', graph: next }));
       }
     },
-    [graph, commitGraph, onGraphEvent]
+    [graph, flowEdges, commitGraph, onGraphEvent]
   );
   const handleConnect = useCallback(
     (connection: FlowConnection) => {
@@ -796,19 +845,22 @@ function GraphEditorInner({
               </button>
             </div>
           )}
-          {error && (
-            <div className="ionodes-toast" role="alert">
+          {showErrorMessages && error && errorMessage !== null && (
+            <div className={`ionodes-toast ${messageClassNames?.error ?? ''}`} role="alert">
               <span>{icons.error ?? '!'}</span>
-              {error}
+              {errorMessage}
               <button aria-label="Dismiss message" onClick={() => setError('')}>
                 {icons.dismiss ?? '×'}
               </button>
             </div>
           )}
-          {issues.length > 0 && (
-            <div className="ionodes-validation" role="status">
+          {showValidationMessages && validationIssue && validationMessage !== null && (
+            <div
+              className={`ionodes-validation ${messageClassNames?.validation ?? ''}`}
+              role="status"
+            >
               <span className="ionodes-error-mark">{icons.validation ?? icons.error ?? '!'}</span>
-              {issues[0]!.message}
+              {validationMessage}
             </div>
           )}
           <input
