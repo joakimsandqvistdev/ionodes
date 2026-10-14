@@ -1,5 +1,13 @@
 export { GraphEditor } from './GraphEditor';
-export type { GraphEditorProps, GraphNodeRendererData, PaletteItem } from './GraphEditor';
+export type {
+  EditorIconName,
+  GraphEditorCanvas,
+  GraphEditorIcons,
+  GraphEditorProps,
+  GraphEditorTheme,
+  GraphNodeRendererData,
+  PaletteItem
+} from './GraphEditor';
 export {
   GRAPH_SCHEMA_VERSION,
   addConnection,

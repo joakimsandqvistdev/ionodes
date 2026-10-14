@@ -12,7 +12,52 @@ For controlled state, pass `graph` and update it from `onChange`:
 <GraphEditor graph={graph} onChange={setGraph} onSelectionChange={setSelection} />
 ```
 
-Props include `palette`, `validateConnection`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, and `className`. Palette entries contain a label, optional description, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+Props include `palette`, `validateConnection`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, and `renderConnectorLabel`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+
+## Theme and canvas
+
+`theme` accepts standard CSS properties and `--ionodes-*` custom properties, applied to the individual editor root. This allows multiple differently themed editors on one page. Defaults are defined in `src/style.css`; override any detail using `className` and the namespaced `.ionodes-*` selectors. React Flow selectors such as `.react-flow__handle`, `.react-flow__edge-path`, and `.react-flow__controls` can be scoped under the same class.
+
+```tsx
+const theme = {
+  '--ionodes-bg': '#f4f6fa',
+  '--ionodes-panel': '#fff',
+  '--ionodes-text': '#202938',
+  '--ionodes-accent': '#6750d8',
+  '--ionodes-focus-ring': '#6750d8'
+} satisfies GraphEditorTheme;
+
+<GraphEditor className="product-editor" theme={theme} defaultGraph={graph} />;
+```
+
+`canvas` controls the default React Flow background and overlays:
+
+```tsx
+<GraphEditor
+  defaultGraph={graph}
+  canvas={{
+    backgroundColor: '#323b47',
+    backgroundGap: 22,
+    backgroundSize: 1,
+    showBackground: true,
+    showControls: true,
+    showMiniMap: false,
+    connectionColor: '#78a8ff',
+    invalidConnectionColor: '#f17870',
+    invalidNodeColor: '#f17870',
+    miniMapMaskColor: 'rgba(11,15,20,.72)',
+    miniMapNodeColor: (node, invalid) => (invalid ? '#f17870' : '#44546a')
+  }}
+/>
+```
+
+The `background`, `controls`, and `miniMap` fields accept React elements to replace the defaults. Keep custom controls/overlays inside the React Flow context. `showBackground`, `showControls`, and `showMiniMap` can turn each built-in surface off.
+
+## Icons and connectors
+
+`icons` replaces built-in UI symbols with any React node, such as an SVG or an icon-library component. It is a partial map; omitted keys keep the defaults. Keys: `node`, `validation`, `palette-add`, `undo`, `redo`, `delete`, `connector-add`, `connector-remove`, `export`, `import`, `close`, `selection-node`, `selection-connection`, `empty-graph`, `data-export`, `data-import`, `dismiss`, `error`, `input-add`, `output-add`, `connection`, `selection-empty`, `input-direction`, `output-direction`, and `fit-shortcut`.
+
+`renderGraphIcon(name, context)` converts persisted node or connector icon descriptor names to React output. `renderConnectorLabel(connector)` replaces the built-in connector label content while preserving the React Flow handles needed to make connections. For total control of node and connector layout, use custom React Flow `nodeTypes` as described below. Connector and connection colors/labels/icons can also be set in graph data. These presentation options do not change the versioned graph schema.
 
 ## Custom node rendering
 

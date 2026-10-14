@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+  type ReactNode
+} from 'react';
 import {
   Background,
   Controls,
@@ -37,7 +46,58 @@ import {
 } from './graph';
 import { commit, createHistory, redo, undo } from './history';
 
-export type PaletteItem = { label: string; description?: string; create: () => GraphNode };
+export type PaletteItem = {
+  label: string;
+  description?: string;
+  icon?: ReactNode;
+  create: () => GraphNode;
+};
+export type EditorIconName =
+  | 'node'
+  | 'validation'
+  | 'palette-add'
+  | 'undo'
+  | 'redo'
+  | 'delete'
+  | 'connector-add'
+  | 'connector-remove'
+  | 'export'
+  | 'import'
+  | 'close'
+  | 'selection-node'
+  | 'selection-connection'
+  | 'empty-graph'
+  | 'data-export'
+  | 'data-import'
+  | 'dismiss'
+  | 'error'
+  | 'input-add'
+  | 'output-add'
+  | 'connection'
+  | 'selection-empty'
+  | 'input-direction'
+  | 'output-direction'
+  | 'fit-shortcut';
+export type GraphEditorIcons = Partial<Record<EditorIconName, ReactNode>>;
+export type GraphEditorTheme = CSSProperties & {
+  [name: `--ionodes-${string}`]: string | number | undefined;
+};
+export type GraphEditorCanvas = {
+  background?: ReactNode;
+  controls?: ReactNode;
+  miniMap?: ReactNode;
+  backgroundColor?: string;
+  backgroundGap?: number;
+  backgroundSize?: number;
+  showBackground?: boolean;
+  showControls?: boolean;
+  showMiniMap?: boolean;
+  miniMapNodeColor?: (node: GraphNode, invalid: boolean) => string;
+  invalidNodeColor?: string;
+  miniMapMaskColor?: string;
+  connectionColor?: string;
+  invalidConnectionColor?: string;
+};
 export type GraphEditorProps = {
   graph?: GraphDocument;
   defaultGraph?: GraphDocument;
@@ -52,6 +112,16 @@ export type GraphEditorProps = {
   nodeTypes?: NodeTypes;
   /** Selects a registered renderer for each graph node. Defaults to "ionode". */
   getNodeType?: (node: GraphNode) => string;
+  /** Inline CSS properties and custom properties (for example `--ionodes-accent`). */
+  theme?: GraphEditorTheme;
+  /** Replaces the default canvas, grid, controls and minimap settings. */
+  canvas?: GraphEditorCanvas;
+  /** Replace any built-in icon. Omitted entries keep their defaults. */
+  icons?: GraphEditorIcons;
+  /** Render graph-provided icon descriptor names as React elements. */
+  renderGraphIcon?: (name: string, context: 'node' | 'connector') => ReactNode;
+  /** Customize connector label content while retaining the built-in React Flow handles. */
+  renderConnectorLabel?: (connector: Connector) => ReactNode;
   palette?: PaletteItem[];
   showPalette?: boolean;
   showInspector?: boolean;
@@ -61,21 +131,27 @@ export type GraphNodeRendererData = {
   graphNode: GraphNode;
   invalid?: boolean;
   updateGraphNode: (patch: Partial<Omit<GraphNode, 'id' | 'connectors'>>) => void;
+  renderGraphIcon?: GraphEditorProps['renderGraphIcon'];
+  renderConnectorLabel?: GraphEditorProps['renderConnectorLabel'];
+  icons?: GraphEditorIcons;
 };
 type FlowNode = Node<GraphNodeRendererData, string>;
 
 function GraphNodeView({ data, selected }: { data: GraphNodeRendererData; selected?: boolean }) {
-  const { graphNode, invalid } = data;
+  const { graphNode, invalid, renderGraphIcon, icons } = data;
   return (
     <div className={`ionodes-node${selected ? ' is-selected' : ''}${invalid ? ' has-error' : ''}`}>
       <div className="ionodes-node-header">
         <span className="ionodes-node-icon" aria-hidden="true">
-          {graphNode.icon?.name ?? '◇'}
+          {(graphNode.icon && renderGraphIcon?.(graphNode.icon.name, 'node')) ??
+            graphNode.icon?.name ??
+            icons?.node ??
+            '◇'}
         </span>
         <strong>{graphNode.title || 'Untitled node'}</strong>
         {invalid && (
           <span className="ionodes-error-mark" aria-label="Validation error">
-            !
+            {icons?.error ?? '!'}
           </span>
         )}
       </div>
@@ -86,7 +162,12 @@ function GraphNodeView({ data, selected }: { data: GraphNodeRendererData; select
         {graphNode.connectors
           .filter((connector) => connector.direction === 'input')
           .map((connector) => (
-            <ConnectorRow key={connector.id} connector={connector} />
+            <ConnectorRow
+              key={connector.id}
+              connector={connector}
+              renderLabel={data.renderConnectorLabel}
+              renderGraphIcon={renderGraphIcon}
+            />
           ))}
         {graphNode.connectors.some((connector) => connector.direction === 'input') &&
           graphNode.connectors.some((connector) => connector.direction === 'output') && (
@@ -95,13 +176,26 @@ function GraphNodeView({ data, selected }: { data: GraphNodeRendererData; select
         {graphNode.connectors
           .filter((connector) => connector.direction === 'output')
           .map((connector) => (
-            <ConnectorRow key={connector.id} connector={connector} />
+            <ConnectorRow
+              key={connector.id}
+              connector={connector}
+              renderLabel={data.renderConnectorLabel}
+              renderGraphIcon={renderGraphIcon}
+            />
           ))}
       </div>
     </div>
   );
 }
-function ConnectorRow({ connector }: { connector: Connector }) {
+function ConnectorRow({
+  connector,
+  renderLabel,
+  renderGraphIcon
+}: {
+  connector: Connector;
+  renderLabel?: GraphEditorProps['renderConnectorLabel'];
+  renderGraphIcon?: GraphEditorProps['renderGraphIcon'];
+}) {
   const input = connector.direction === 'input';
   return (
     <div className={`ionodes-connector-row ${input ? 'is-input' : 'is-output'}`}>
@@ -120,8 +214,18 @@ function ConnectorRow({ connector }: { connector: Connector }) {
         aria-hidden="true"
       />
       <span className="ionodes-connector-label">
-        {connector.icon?.name && <span aria-hidden="true">{connector.icon.name} </span>}
-        {connector.label || (input ? 'Input' : 'Output')}
+        {renderLabel ? (
+          renderLabel(connector)
+        ) : (
+          <>
+            {connector.icon?.name && (
+              <span aria-hidden="true">
+                {renderGraphIcon?.(connector.icon.name, 'connector') ?? connector.icon.name}{' '}
+              </span>
+            )}
+            {connector.label || (input ? 'Input' : 'Output')}
+          </>
+        )}
       </span>
       {connector.type && <span className="ionodes-type-key">{connector.type}</span>}
       {!input && (
@@ -172,7 +276,12 @@ function GraphEditorInner({
   showInspector = true,
   className = '',
   nodeTypes: customNodeTypes,
-  getNodeType
+  getNodeType,
+  theme,
+  canvas = {},
+  icons = {},
+  renderGraphIcon,
+  renderConnectorLabel
 }: GraphEditorProps) {
   const [history, setHistory] = useState(() =>
     createHistory(defaultGraph ?? controlledGraph ?? createGraph(createId('graph')))
@@ -185,6 +294,9 @@ function GraphEditorInner({
   const [positionOverrides, setPositionOverrides] = useState<Record<string, GraphNode['position']>>(
     {}
   );
+  const [nodeMeasurements, setNodeMeasurements] = useState<
+    Record<string, { width?: number; height?: number }>
+  >({});
   const [error, setError] = useState('');
   const [json, setJson] = useState('');
   const [showJson, setShowJson] = useState(false);
@@ -237,10 +349,14 @@ function GraphEditorInner({
         id: item.id,
         type: getNodeType?.(item) ?? 'ionode',
         position: positionOverrides[item.id] ?? item.position,
+        measured: nodeMeasurements[item.id],
         data: {
           graphNode: item,
           invalid: invalidNodeIds.has(item.id),
-          updateGraphNode: (patch) => updateGraphNode(item.id, patch)
+          updateGraphNode: (patch) => updateGraphNode(item.id, patch),
+          renderGraphIcon,
+          renderConnectorLabel,
+          icons
         },
         selected: selection.nodeIds.includes(item.id),
         draggable: true
@@ -250,8 +366,12 @@ function GraphEditorInner({
       invalidNodeIds,
       selection.nodeIds,
       positionOverrides,
+      nodeMeasurements,
       getNodeType,
-      updateGraphNode
+      updateGraphNode,
+      renderGraphIcon,
+      renderConnectorLabel,
+      icons
     ]
   );
   const flowEdges = useMemo<Edge[]>(
@@ -265,13 +385,13 @@ function GraphEditorInner({
         label: edge.label,
         style: {
           stroke: issues.some((issue) => issue.elementId === edge.id)
-            ? '#f17870'
-            : edge.color || '#77a9ff',
+            ? canvas.invalidConnectionColor || '#f17870'
+            : edge.color || canvas.connectionColor || '#77a9ff',
           strokeWidth: 2
         },
         animated: false
       })),
-    [graph.connections, issues]
+    [graph.connections, issues, canvas.connectionColor, canvas.invalidConnectionColor]
   );
   const nodeTypes = useMemo<NodeTypes>(
     () => ({ ionode: GraphNodeView as never, ...customNodeTypes }),
@@ -280,6 +400,14 @@ function GraphEditorInner({
   const onNodesChange = useCallback(
     (changes: Parameters<typeof applyNodeChanges>[0]) => {
       const moved = applyNodeChanges(changes, flowNodes);
+      if (changes.some((change) => change.type === 'dimensions')) {
+        setNodeMeasurements((current) => ({
+          ...current,
+          ...Object.fromEntries(
+            moved.flatMap((node) => (node.measured ? [[node.id, node.measured]] : []))
+          )
+        }));
+      }
       const next = {
         ...graph,
         nodes: graph.nodes.map((item) => {
@@ -497,7 +625,7 @@ function GraphEditorInner({
   };
 
   return (
-    <div className={`ionodes-editor ${className}`}>
+    <div className={`ionodes-editor ${className}`} style={theme}>
       {showPalette && (
         <aside className="ionodes-sidebar ionodes-palette" aria-label="Node palette">
           <div className="ionodes-panel-heading">
@@ -513,7 +641,9 @@ function GraphEditorInner({
               key={`${item.label}-${index}`}
               onClick={() => addPaletteItem(item)}
             >
-              <span className="ionodes-palette-glyph">＋</span>
+              <span className="ionodes-palette-glyph">
+                {item.icon ?? icons['palette-add'] ?? '＋'}
+              </span>
               <span>
                 <strong>{item.label}</strong>
                 <small>{item.description ?? 'Add a configurable graph node'}</small>
@@ -551,7 +681,7 @@ function GraphEditorInner({
               aria-label="Undo"
               title="Undo (Ctrl Z)"
             >
-              ↶ <span>Undo</span>
+              {icons.undo ?? '↶'} <span>Undo</span>
             </button>
             <button
               className="ionodes-button quiet"
@@ -560,11 +690,11 @@ function GraphEditorInner({
               aria-label="Redo"
               title="Redo (Ctrl Shift Z)"
             >
-              ↷ <span>Redo</span>
+              {icons.redo ?? '↷'} <span>Redo</span>
             </button>
             <span className="ionodes-toolbar-separator" />
             <button className="ionodes-button quiet" onClick={exportJson}>
-              Export JSON
+              {icons.export ?? null} Export JSON
             </button>
             <button
               className="ionodes-button primary"
@@ -574,7 +704,7 @@ function GraphEditorInner({
                 setJson('');
               }}
             >
-              Load JSON
+              {icons.import ?? null} Load JSON
             </button>
           </div>
         </header>
@@ -623,40 +753,61 @@ function GraphEditorInner({
               return true;
             }}
           >
-            <Background color="#323b47" gap={22} size={1} />
-            <MiniMap
-              pannable
-              zoomable
-              nodeColor={(node) => (invalidNodeIds.has(node.id) ? '#f17870' : '#44546a')}
-              maskColor="rgba(11,15,20,.72)"
-            />
-            <Controls showInteractive={false} />
+            {canvas.background ??
+              (canvas.showBackground === false ? null : (
+                <Background
+                  color={canvas.backgroundColor ?? '#323b47'}
+                  gap={canvas.backgroundGap ?? 22}
+                  size={canvas.backgroundSize ?? 1}
+                />
+              ))}
+            {canvas.showMiniMap === false
+              ? null
+              : (canvas.miniMap ?? (
+                  <MiniMap
+                    pannable
+                    zoomable
+                    nodeColor={(node) => {
+                      const graphNode = graph.nodes.find((item) => item.id === node.id);
+                      const invalid = invalidNodeIds.has(node.id);
+                      return graphNode && canvas.miniMapNodeColor
+                        ? canvas.miniMapNodeColor(graphNode, invalid)
+                        : invalid
+                          ? (canvas.invalidNodeColor ?? '#f17870')
+                          : '#44546a';
+                    }}
+                    maskColor={canvas.miniMapMaskColor ?? 'rgba(11,15,20,.72)'}
+                  />
+                ))}
+            {canvas.showControls === false
+              ? null
+              : (canvas.controls ?? <Controls showInteractive={false} />)}
           </ReactFlow>
           {graph.nodes.length === 0 && (
             <div className="ionodes-empty">
-              <span className="ionodes-empty-icon">⌘</span>
+              <span className="ionodes-empty-icon">{icons['empty-graph'] ?? '⌘'}</span>
               <strong>Your graph starts here</strong>
               <p>Add a node from the palette, then connect its ports.</p>
               <button
                 className="ionodes-button primary"
                 onClick={() => palette[0] && addPaletteItem(palette[0])}
               >
-                ＋ Add your first node
+                {icons['palette-add'] ?? '＋'} Add your first node
               </button>
             </div>
           )}
           {error && (
             <div className="ionodes-toast" role="alert">
-              <span>!</span>
+              <span>{icons.error ?? '!'}</span>
               {error}
               <button aria-label="Dismiss message" onClick={() => setError('')}>
-                ×
+                {icons.dismiss ?? '×'}
               </button>
             </div>
           )}
           {issues.length > 0 && (
             <div className="ionodes-validation" role="status">
-              <span className="ionodes-error-mark">!</span>
+              <span className="ionodes-error-mark">{icons.validation ?? icons.error ?? '!'}</span>
               {issues[0]!.message}
             </div>
           )}
@@ -675,7 +826,7 @@ function GraphEditorInner({
               : 'Select a node or connection to inspect it'}
           </span>
           <span>
-            Pan: drag canvas <i /> Zoom: scroll <i /> Fit: ⌘0
+            Pan: drag canvas <i /> Zoom: scroll <i /> Fit: {icons['fit-shortcut'] ?? '⌘'}0
           </span>
         </footer>
       </main>
@@ -693,13 +844,13 @@ function GraphEditorInner({
               aria-label="Delete selected item"
               title="Delete selection"
             >
-              ⌫
+              {icons.delete ?? '⌫'}
             </button>
           </div>
           {selectedNode ? (
             <div className="ionodes-inspector-content">
               <div className="ionodes-selection-kind">
-                <span className="ionodes-node-chip">◇</span>
+                <span className="ionodes-node-chip">{icons['selection-node'] ?? '◇'}</span>
                 <div>
                   <strong>Node properties</strong>
                   <small>{selectedNode.id}</small>
@@ -737,10 +888,10 @@ function GraphEditorInner({
                 <span>Connectors</span>
                 <div>
                   <button className="ionodes-mini-button" onClick={() => addConnector('input')}>
-                    ＋ Input
+                    {icons['input-add'] ?? icons['connector-add'] ?? '＋'} Input
                   </button>
                   <button className="ionodes-mini-button" onClick={() => addConnector('output')}>
-                    ＋ Output
+                    {icons['output-add'] ?? icons['connector-add'] ?? '＋'} Output
                   </button>
                 </div>
               </div>
@@ -750,6 +901,7 @@ function GraphEditorInner({
                   connector={connector}
                   onChange={updateSelectedConnector}
                   onRemove={() => setGraph(removeConnector(graph, selectedNode.id, connector.id))}
+                  icons={icons}
                 />
               ))}
             </div>
@@ -758,10 +910,11 @@ function GraphEditorInner({
               graph={graph}
               connectionId={selection.connectionIds[0]!}
               onChange={setGraph}
+              icon={icons['selection-connection'] ?? icons.connection}
             />
           ) : (
             <div className="ionodes-inspector-empty">
-              <span>◎</span>
+              <span>{icons['selection-empty'] ?? '◎'}</span>
               <strong>Nothing selected</strong>
               <p>Choose a node or wire to see its properties.</p>
               <div className="ionodes-inspector-tip">
@@ -772,7 +925,7 @@ function GraphEditorInner({
           <div className="ionodes-io">
             <span className="ionodes-eyebrow">GRAPH DATA</span>
             <button className="ionodes-data-action" onClick={exportJson}>
-              <span>↗</span>Export graph as JSON
+              <span>{icons['data-export'] ?? icons.export ?? '↗'}</span>Export graph as JSON
             </button>
             <button
               className="ionodes-data-action"
@@ -782,7 +935,7 @@ function GraphEditorInner({
                 setJson('');
               }}
             >
-              <span>↙</span>Import graph from JSON
+              <span>{icons['data-import'] ?? icons.import ?? '↙'}</span>Import graph from JSON
             </button>
           </div>
         </aside>
@@ -814,7 +967,7 @@ function GraphEditorInner({
                 aria-label="Close dialog"
                 onClick={() => setShowJson(false)}
               >
-                ×
+                {icons.close ?? '×'}
               </button>
             </div>
             <p className="ionodes-panel-copy">
@@ -859,25 +1012,30 @@ function GraphEditorInner({
 function ConnectorEditor({
   connector,
   onChange,
-  onRemove
+  onRemove,
+  icons = {}
 }: {
   connector: Connector;
   onChange: (connector: Connector) => void;
   onRemove: () => void;
+  icons?: GraphEditorIcons;
 }) {
   const patch = (value: Partial<Connector>) => onChange({ ...connector, ...value });
   return (
     <div className="ionodes-connector-editor">
       <div className="ionodes-connector-editor-title">
         <span className={`ionodes-direction-badge ${connector.direction}`}>
-          {connector.direction === 'input' ? '↓' : '↑'} {connector.direction}
+          {connector.direction === 'input'
+            ? (icons['input-direction'] ?? '↓')
+            : (icons['output-direction'] ?? '↑')}{' '}
+          {connector.direction}
         </span>
         <button
           aria-label={`Remove ${connector.label || connector.direction} connector`}
           className="ionodes-remove-button"
           onClick={onRemove}
         >
-          ×
+          {icons['connector-remove'] ?? '×'}
         </button>
       </div>
       <label className="ionodes-field compact">
@@ -928,11 +1086,13 @@ function ConnectorEditor({
 function ConnectionInspector({
   graph,
   connectionId,
-  onChange
+  onChange,
+  icon
 }: {
   graph: GraphDocument;
   connectionId: string;
   onChange: (graph: GraphDocument) => void;
+  icon?: ReactNode;
 }) {
   const connection = graph.connections.find((edge) => edge.id === connectionId);
   if (!connection) return null;
@@ -946,7 +1106,7 @@ function ConnectionInspector({
   return (
     <div className="ionodes-inspector-content">
       <div className="ionodes-selection-kind">
-        <span className="ionodes-node-chip">↗</span>
+        <span className="ionodes-node-chip">{icon ?? '↗'}</span>
         <div>
           <strong>Connection properties</strong>
           <small>{connection.id}</small>
