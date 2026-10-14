@@ -312,9 +312,6 @@ function GraphEditorInner({
   const [positionOverrides, setPositionOverrides] = useState<Record<string, GraphNode['position']>>(
     {}
   );
-  const [nodeMeasurements, setNodeMeasurements] = useState<
-    Record<string, { width?: number; height?: number }>
-  >({});
   const [error, setError] = useState('');
   const [json, setJson] = useState('');
   const [showJson, setShowJson] = useState(false);
@@ -378,7 +375,6 @@ function GraphEditorInner({
         id: item.id,
         type: getNodeType?.(item) ?? 'ionode',
         position: positionOverrides[item.id] ?? item.position,
-        measured: nodeMeasurements[item.id],
         data: {
           graphNode: item,
           invalid: invalidNodeIds.has(item.id),
@@ -395,7 +391,6 @@ function GraphEditorInner({
       invalidNodeIds,
       selection.nodeIds,
       positionOverrides,
-      nodeMeasurements,
       getNodeType,
       updateGraphNode,
       renderGraphIcon,
@@ -441,18 +436,6 @@ function GraphEditorInner({
           ...current,
           nodeIds: moved.filter((node) => node.selected).map((node) => node.id)
         }));
-      }
-      if (changes.some((change) => change.type === 'dimensions')) {
-        const measurements = Object.fromEntries(
-          moved.flatMap((node) => (node.measured ? [[node.id, node.measured]] : []))
-        );
-        setNodeMeasurements((current) => {
-          const unchanged = Object.entries(measurements).every(
-            ([id, measurement]) =>
-              current[id]?.width === measurement.width && current[id]?.height === measurement.height
-          );
-          return unchanged ? current : { ...current, ...measurements };
-        });
       }
       const next = {
         ...graph,

@@ -48,7 +48,7 @@ describe('GraphEditor', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
-  it('does not update node measurements repeatedly when React Flow reports unchanged dimensions', () => {
+  it('does not feed React Flow dimension measurements back into controlled nodes', () => {
     const graph = addNode(createGraph('workflow'), {
       id: 'node', title: 'Node', position: { x: 0, y: 0 }, connectors: []
     });
