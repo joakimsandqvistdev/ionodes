@@ -24,6 +24,7 @@
     "./style.css": "./dist/style.css"
   },
   "scripts": {
+    "prepare": "npm run build:lib",
     "dev": "vite --host 0.0.0.0",
     "build": "npm run typecheck && npm run build:demo && npm run build:lib",
     "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
