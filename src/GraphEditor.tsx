@@ -312,6 +312,9 @@ function GraphEditorInner({
   const [positionOverrides, setPositionOverrides] = useState<Record<string, GraphNode['position']>>(
     {}
   );
+  const [nodeMeasurements, setNodeMeasurements] = useState<
+    Record<string, { width: number; height: number }>
+  >({});
   const [error, setError] = useState('');
   const [json, setJson] = useState('');
   const [showJson, setShowJson] = useState(false);
@@ -375,6 +378,7 @@ function GraphEditorInner({
         id: item.id,
         type: getNodeType?.(item) ?? 'ionode',
         position: positionOverrides[item.id] ?? item.position,
+        measured: nodeMeasurements[item.id],
         data: {
           graphNode: item,
           invalid: invalidNodeIds.has(item.id),
@@ -389,6 +393,7 @@ function GraphEditorInner({
     [
       graph.nodes,
       invalidNodeIds,
+      nodeMeasurements,
       selection.nodeIds,
       positionOverrides,
       getNodeType,
@@ -430,6 +435,27 @@ function GraphEditorInner({
   );
   const onNodesChange = useCallback(
     (changes: Parameters<typeof applyNodeChanges>[0]) => {
+      const dimensionChanges = changes.flatMap((change) =>
+        change.type === 'dimensions' && change.dimensions
+          ? [{ id: change.id, dimensions: change.dimensions }]
+          : []
+      );
+      if (dimensionChanges.length) {
+        setNodeMeasurements((current) => {
+          let next = current;
+          for (const change of dimensionChanges) {
+            const previous = current[change.id];
+            if (
+              previous?.width !== change.dimensions.width ||
+              previous?.height !== change.dimensions.height
+            ) {
+              if (next === current) next = { ...current };
+              next[change.id] = change.dimensions;
+            }
+          }
+          return next;
+        });
+      }
       const moved = applyNodeChanges(changes, flowNodes);
       if (changes.some((change) => change.type === 'select')) {
         setSelection((current) => ({

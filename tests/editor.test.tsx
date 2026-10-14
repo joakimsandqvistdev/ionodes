@@ -10,12 +10,12 @@ vi.mock('@xyflow/react', async (importOriginal) => {
     ...actual,
     ReactFlowProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useReactFlow: () => ({ fitView: () => Promise.resolve(true) }),
-    ReactFlow: ({ nodes, onNodesChange, onSelectionChange }: { nodes: Array<{ id: string; type?: string; selected?: boolean }>; onSelectionChange: (selection: { nodes: Array<{ id: string; selected?: boolean }>; edges: Array<{ id: string }> }) => void; onNodesChange: (changes: Array<{ type: 'dimensions'; id: string; dimensions: { width: number; height: number }; resizing: false }>) => void }) => {
+    ReactFlow: ({ nodes, onNodesChange, onSelectionChange }: { nodes: Array<{ id: string; type?: string; selected?: boolean; measured?: { width: number; height: number } }>; onSelectionChange: (selection: { nodes: Array<{ id: string; selected?: boolean }>; edges: Array<{ id: string }> }) => void; onNodesChange: (changes: Array<{ type: 'dimensions'; id: string; dimensions: { width: number; height: number }; resizing: false }>) => void }) => {
       React.useEffect(() => {
         onNodesChange(nodes.map((node) => ({ type: 'dimensions', id: node.id, dimensions: { width: 200, height: 100 }, resizing: false })));
         onSelectionChange({ nodes: nodes.filter((node) => node.selected), edges: [] });
       }, [nodes, onNodesChange, onSelectionChange]);
-      return <div>{nodes.map((node) => <span key={node.id} data-testid="node-renderer-type">{node.type}</span>)}</div>;
+      return <div>{nodes.map((node) => <span key={node.id} data-testid="node-renderer-type" data-node-width={node.measured?.width}>{node.type}</span>)}</div>;
     },
     Background: () => null,
     Controls: () => null,
@@ -49,7 +49,7 @@ describe('GraphEditor', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
-  it('does not loop when React Flow repeats an empty selection notification', () => {
+  it('retains measured dimensions and does not loop on repeated empty selection notifications', () => {
     const graph = addNode(createGraph('workflow'), {
       id: 'node', title: 'Node', position: { x: 0, y: 0 }, connectors: []
     });
@@ -59,5 +59,6 @@ describe('GraphEditor', () => {
       </div>
     );
     expect(container.querySelector('.ionodes-canvas-count')).toHaveTextContent('1 nodes · 0 connections');
+    expect(container.querySelector('[data-node-width="200"]')).toBeInTheDocument();
   });
 });
