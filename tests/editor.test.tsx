@@ -54,12 +54,13 @@ vi.mock('@xyflow/react', async (importOriginal) => {
 describe('GraphEditor', () => {
   it('exposes labeled accessible editor controls and adds a palette node', () => {
     const customNodeTypes = { custom: () => <div>Custom node</div> };
-    render(
+    const { container } = render(
       <div style={{ width: 1000, height: 700 }}>
-        <GraphEditor nodeTypes={customNodeTypes} getNodeType={() => 'custom'} />
+        <GraphEditor nodeTypes={customNodeTypes} getNodeType={() => 'custom'} graphTitle="Demo graph" />
       </div>
     );
     expect(screen.getByRole('region', { name: 'Graph canvas' })).toBeInTheDocument();
+    expect(container.querySelector('.ionodes-canvas-label')).toHaveTextContent('Demo graph');
     expect(screen.getByRole('complementary', { name: 'Node palette' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }));
     expect(screen.getByText('1 nodes · 0 connections')).toBeInTheDocument();

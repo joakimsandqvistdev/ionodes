@@ -136,6 +136,8 @@ export type GraphEditorProps = {
   renderMessage?: (message: EditorMessage) => ReactNode;
   /** Add consumer classes to the validation and error message containers. */
   messageClassNames?: GraphEditorMessageClassNames;
+  /** Display a consumer-provided graph name in the canvas label. Defaults to "Untitled graph". */
+  graphTitle?: string;
   palette?: PaletteItem[];
   showPalette?: boolean;
   showInspector?: boolean;
@@ -299,7 +301,8 @@ function GraphEditorInner({
   showValidationMessages = true,
   showErrorMessages = true,
   renderMessage,
-  messageClassNames
+  messageClassNames,
+  graphTitle
 }: GraphEditorProps) {
   const [history, setHistory] = useState(() =>
     createHistory(defaultGraph ?? controlledGraph ?? createGraph(createId('graph')))
@@ -786,7 +789,7 @@ function GraphEditorInner({
         <section className="ionodes-canvas" aria-label="Graph canvas">
           <div className="ionodes-canvas-label">
             <span className="ionodes-live-dot" />
-            Untitled graph{' '}
+            {graphTitle?.trim() || 'Untitled graph'}{' '}
             <span className="ionodes-canvas-count">
               {graph.nodes.length} nodes · {graph.connections.length} connections
             </span>
