@@ -134,6 +134,8 @@ export type GraphEditorProps = {
   renderConnectorLabel?: (connector: Connector) => ReactNode;
   /** Hide validation feedback while keeping validation rules active. Defaults to true. */
   showValidationMessages?: boolean;
+  /** Hide warnings when a connection fails validation, without allowing invalid connections. Defaults to true. */
+  showConnectionWarnings?: boolean;
   /** Hide import/export/connection error feedback. Defaults to true. */
   showErrorMessages?: boolean;
   /** Replace the visible message content. Return null to suppress an individual message. */
@@ -303,6 +305,7 @@ function GraphEditorInner({
   renderGraphIcon,
   renderConnectorLabel,
   showValidationMessages = true,
+  showConnectionWarnings = true,
   showErrorMessages = true,
   showStatusBar = true,
   renderMessage,
@@ -347,11 +350,13 @@ function GraphEditorInner({
   const selectedNode = graph.nodes.find((node) => selection.nodeIds.includes(node.id));
   const issues = useMemo(
     () =>
-      graph.connections.flatMap((edge) => {
-        const issue = validateConnection(graph, edge, rule);
-        return issue ? [issue] : [];
-      }),
-    [graph, rule]
+      showConnectionWarnings
+        ? graph.connections.flatMap((edge) => {
+            const issue = validateConnection(graph, edge, rule);
+            return issue ? [issue] : [];
+          })
+        : [],
+    [graph, rule, showConnectionWarnings]
   );
   const validationIssue = issues[0];
   const validationMessage = validationIssue
@@ -538,7 +543,7 @@ function GraphEditorInner({
       };
       const issue = validateConnection(graph, item, rule);
       if (issue) {
-        setError(issue.message);
+        if (showConnectionWarnings) setError(issue.message);
         return;
       }
       try {
@@ -550,7 +555,7 @@ function GraphEditorInner({
         setError(caught instanceof Error ? caught.message : 'Could not create connection.');
       }
     },
-    [graph, rule, setGraph, onGraphEvent]
+    [graph, rule, showConnectionWarnings, setGraph, onGraphEvent]
   );
   const addPaletteItem = (item: PaletteItem) => {
     const node = item.create();
@@ -831,7 +836,9 @@ function GraphEditorInner({
                 rule
               );
               if (issue) {
-                setError((current) => (current === issue.message ? current : issue.message));
+                if (showConnectionWarnings) {
+                  setError((current) => (current === issue.message ? current : issue.message));
+                }
                 return false;
               }
               return true;
@@ -889,7 +896,7 @@ function GraphEditorInner({
               </button>
             </div>
           )}
-          {showValidationMessages && validationIssue && validationMessage !== null && (
+          {showValidationMessages && showConnectionWarnings && validationIssue && validationMessage !== null && (
             <div
               className={`ionodes-validation ${messageClassNames?.validation ?? ''}`}
               role="status"

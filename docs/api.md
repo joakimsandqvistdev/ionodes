@@ -12,11 +12,13 @@ For controlled state, pass `graph` and update it from `onChange`:
 <GraphEditor graph={graph} onChange={setGraph} onSelectionChange={setSelection} />
 ```
 
-Props include `palette`, `validateConnection`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `showStatusBar`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, `renderConnectorLabel`, `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames`. The bottom status bar is visible by default and can be hidden with `showStatusBar={false}`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+Props include `palette`, `validateConnection`, `showConnectionWarnings`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `showStatusBar`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, `renderConnectorLabel`, `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames`. The bottom status bar is visible by default and can be hidden with `showStatusBar={false}`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
 
 ## Validation and error messages
 
 Validation feedback and editor error feedback are enabled by default. Hide either category independently with `showValidationMessages={false}` or `showErrorMessages={false}`. Hiding validation feedback does not disable connection validation; invalid connections remain invalid.
+
+Set `showConnectionWarnings={false}` to hide warnings for failed connection attempts and invalid existing connections. Connector direction, cardinality, and the `validateConnection` rule remain enforced, so invalid connections are still rejected. The default is `true`.
 
 `renderMessage` receives a discriminated `EditorMessage`: `{ kind: 'validation', issue }` for a `GraphIssue`, or `{ kind: 'error', message }` for editor errors. It may return text or any React node. Return `null` to suppress that particular message. These types are exported from `ionodes`.
 
