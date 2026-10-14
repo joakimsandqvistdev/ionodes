@@ -12,7 +12,7 @@ For controlled state, pass `graph` and update it from `onChange`:
 <GraphEditor graph={graph} onChange={setGraph} onSelectionChange={setSelection} />
 ```
 
-Props include `palette`, `validateConnection`, `showConnectionWarnings`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `showStatusBar`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, `renderConnectorLabel`, `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames`. The bottom status bar is visible by default and can be hidden with `showStatusBar={false}`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+Props include `palette`, `validateConnection`, `showConnectionWarnings`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `showStatusBar`, `showEmptyState`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, `renderConnectorLabel`, `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames`. The bottom status bar is visible by default and can be hidden with `showStatusBar={false}`. The built-in empty-graph prompt can be hidden with `showEmptyState={false}`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
 
 ## Validation and error messages
 
