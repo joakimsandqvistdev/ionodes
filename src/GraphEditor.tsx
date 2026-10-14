@@ -309,6 +309,20 @@ function GraphEditorInner({
     nodeIds: [],
     connectionIds: []
   });
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
+  const updateSelection = useCallback((next: { nodeIds: string[]; connectionIds: string[] }) => {
+    const current = selectionRef.current;
+    const sameIds = (left: string[], right: string[]) =>
+      left.length === right.length && left.every((id) => right.includes(id));
+    if (sameIds(current.nodeIds, next.nodeIds) && sameIds(current.connectionIds, next.connectionIds))
+      return;
+    selectionRef.current = next;
+    setSelection(next);
+    onSelectionChangeRef.current?.(next);
+  }, []);
   const [positionOverrides, setPositionOverrides] = useState<Record<string, GraphNode['position']>>(
     {}
   );
@@ -458,10 +472,10 @@ function GraphEditorInner({
       }
       const moved = applyNodeChanges(changes, flowNodes);
       if (changes.some((change) => change.type === 'select')) {
-        setSelection((current) => ({
-          ...current,
+        updateSelection({
+          ...selectionRef.current,
           nodeIds: moved.filter((node) => node.selected).map((node) => node.id)
-        }));
+        });
       }
       const next = {
         ...graph,
@@ -476,16 +490,16 @@ function GraphEditorInner({
       } else if (changes.some((change) => change.type === 'position' && change.dragging))
         setPositionOverrides(Object.fromEntries(moved.map((node) => [node.id, node.position])));
     },
-    [flowNodes, graph, commitGraph]
+    [flowNodes, graph, commitGraph, updateSelection]
   );
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       const updatedEdges = applyEdgeChanges(changes, flowEdges);
       if (changes.some((change) => change.type === 'select')) {
-        setSelection((current) => ({
-          ...current,
+        updateSelection({
+          ...selectionRef.current,
           connectionIds: updatedEdges.filter((edge) => edge.selected).map((edge) => edge.id)
-        }));
+        });
       }
       const removed = changes
         .filter((change) => change.type === 'remove')
@@ -496,7 +510,7 @@ function GraphEditorInner({
         removed.forEach(() => onGraphEvent?.({ type: 'connection-removed', graph: next }));
       }
     },
-    [graph, flowEdges, commitGraph, onGraphEvent]
+    [graph, flowEdges, commitGraph, onGraphEvent, updateSelection]
   );
   const handleConnect = useCallback(
     (connection: FlowConnection) => {
@@ -534,7 +548,7 @@ function GraphEditorInner({
     const node = item.create();
     const next = addNode(graph, node);
     setGraph(next);
-    setSelection({ nodeIds: [node.id], connectionIds: [] });
+    updateSelection({ nodeIds: [node.id], connectionIds: [] });
     onGraphEvent?.({ type: 'node-added', graph: next });
   };
   const updateSelectedNode = (patch: Partial<Omit<GraphNode, 'id' | 'connectors'>>) => {
@@ -554,7 +568,7 @@ function GraphEditorInner({
       onGraphEvent?.({ type: 'connection-removed', graph: next });
     });
     if (next !== graph) setGraph(next);
-    setSelection({ nodeIds: [], connectionIds: [] });
+    updateSelection({ nodeIds: [], connectionIds: [] });
   };
   const undoEdit = useCallback(() => {
     if (!controlledGraph)
@@ -635,15 +649,8 @@ function GraphEditorInner({
   }, [showJson]);
   const handleSelection = useCallback(({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
     const next = { nodeIds: nodes.map((n) => n.id), connectionIds: edges.map((e) => e.id) };
-    const selectionUnchanged =
-      selection.nodeIds.length === next.nodeIds.length &&
-      selection.nodeIds.every((id, index) => id === next.nodeIds[index]) &&
-      selection.connectionIds.length === next.connectionIds.length &&
-      selection.connectionIds.every((id, index) => id === next.connectionIds[index]);
-    if (selectionUnchanged) return;
-    setSelection(next);
-    onSelectionChange?.(next);
-  }, [selection.nodeIds, selection.connectionIds, onSelectionChange]);
+    updateSelection(next);
+  }, [updateSelection]);
   const exportJson = () => {
     try {
       const value = serializeGraph(graph);
@@ -668,7 +675,7 @@ function GraphEditorInner({
     try {
       const next = deserializeGraph(value);
       setGraph(next);
-      setSelection({ nodeIds: [], connectionIds: [] });
+      updateSelection({ nodeIds: [], connectionIds: [] });
       setError('');
       setShowJson(false);
       onGraphEvent?.({ type: 'imported', graph: next });
