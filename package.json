@@ -1,0 +1,60 @@
+{
+  "name": "ionodes",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "A reusable React node graph editor for generic graph data.",
+  "license": "Apache-2.0",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "docs"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "npm run typecheck && npm run build:demo && npm run build:lib",
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "build:demo": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "peerDependencies": {
+    "@xyflow/react": "^12.0.0",
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@xyflow/react": "^12.8.5",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.16.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}
