@@ -126,6 +126,8 @@ export type GraphEditorProps = {
   canvas?: GraphEditorCanvas;
   /** Show the bottom status bar. Defaults to true. */
   showStatusBar?: boolean;
+  /** Show the built-in empty-graph prompt when there are no nodes. Defaults to true. */
+  showEmptyState?: boolean;
   /** Replace any built-in icon. Omitted entries keep their defaults. */
   icons?: GraphEditorIcons;
   /** Render graph-provided icon descriptor names as React elements. */
@@ -308,6 +310,7 @@ function GraphEditorInner({
   showConnectionWarnings = true,
   showErrorMessages = true,
   showStatusBar = true,
+  showEmptyState = true,
   renderMessage,
   messageClassNames,
   graphTitle
@@ -874,7 +877,7 @@ function GraphEditorInner({
               ? null
               : (canvas.controls ?? <Controls showInteractive={false} />)}
           </ReactFlow>
-          {graph.nodes.length === 0 && (
+          {showEmptyState && graph.nodes.length === 0 && (
             <div className="ionodes-empty">
               <span className="ionodes-empty-icon">{icons['empty-graph'] ?? '⌘'}</span>
               <strong>Your graph starts here</strong>
