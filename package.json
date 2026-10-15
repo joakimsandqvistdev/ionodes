@@ -4,6 +4,10 @@
   "private": false,
   "type": "module",
   "description": "A reusable React node graph editor for generic graph data.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joakimsandqvistdev/ionodes.git"
+  },
   "license": "Apache-2.0",
   "sideEffects": [
     "**/*.css"
