@@ -1,6 +1,6 @@
 {
   "name": "ionodes",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": false,
   "type": "module",
   "description": "A reusable React node graph editor for generic graph data.",

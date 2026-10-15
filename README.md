@@ -1,6 +1,6 @@
 # ionodes
 
-A reusable, domain-neutral node graph editor for React, TypeScript, and [`@xyflow/react`](https://reactflow.dev/). It provides editable nodes and connectors, validation, undo and redo, and a versioned JSON format. The editor ships with a dark, customizable theme and a small interactive demo.
+A reusable, domain-neutral node graph editor for React, TypeScript, and [`@xyflow/react`](https://reactflow.dev/). It provides editable nodes and connectors, validation, undo and redo, compact nodes with optional click-to-expand editors, and a versioned JSON format. The editor ships with a customizable theme and a small interactive demo.
 
 [Source code](https://github.com/joakimsandqvistdev/ionodes) · [Changelog](CHANGELOG.md) · [License](LICENSE)
 
@@ -65,7 +65,7 @@ const theme = {
 }
 ```
 
-The `canvas` prop configures or replaces the React Flow background, controls, and minimap. The background can be supplied as a React element; controls and minimap can be hidden or replaced. Grid spacing/color, minimap colors, and default connection/validation colors are configurable. `nodeTypes` and `getNodeType` replace built-in node markup entirely. `renderConnectorLabel` customizes connector content while retaining graph handles; `renderGraphIcon` maps graph icon descriptor names to React elements. The `icons` prop replaces built-in UI symbols, and each palette entry can provide its own `icon` element. Connector and connection `color` values remain in graph data.
+The `canvas` prop configures or replaces the React Flow background, controls, and minimap. The background can be supplied as a React element; controls and minimap can be hidden or replaced. Grid spacing/color, minimap colors, and default connection/validation colors are configurable. `nodeTypes` and `getNodeType` replace built-in node markup entirely. `renderNodeEditor` adds an optional click-to-expand editor inside each built-in node; node editors start collapsed and their open/closed state is transient. `nodeEditorLabel` changes the accessible toggle label. `renderConnectorLabel` customizes connector content while retaining graph handles; `renderGraphIcon` maps graph icon descriptor names to React elements. The `icons` prop replaces built-in UI symbols, and each palette entry can provide its own `icon` element. Connector and connection `color` values remain in graph data.
 
 ```tsx
 <GraphEditor
@@ -139,7 +139,7 @@ These controls cover validation feedback and errors displayed by the editor, suc
 
 ## API
 
-`GraphEditor` accepts `graph` for controlled state or `defaultGraph` for internal state. Use `onChange` to receive graph edits. `palette` supplies React-friendly node creation actions. `validateConnection` can reject a proposed connection with a boolean or an explanatory message. Optional panels can be hidden with `showPalette` and `showInspector`. `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames` control feedback visibility, content, and styling. `onSelectionChange` and `onGraphEvent` expose editor events. `theme`, `canvas`, `icons`, and rendering hooks customize the appearance without changing the persisted graph format.
+`GraphEditor` accepts `graph` for controlled state or `defaultGraph` for internal state. Use `onChange` to receive graph edits. `palette` supplies React-friendly node creation actions. `validateConnection` can reject a proposed connection with a boolean or an explanatory message. Optional panels can be hidden with `showPalette` and `showInspector`. `renderNodeEditor` can place configuration beside the node's connector rows without expanding the node's canvas footprint; it receives the current `GraphNode` and the same update callback as custom node renderers. The editor UI state is not serialized. `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames` control feedback visibility, content, and styling. `onSelectionChange` and `onGraphEvent` expose editor events. `theme`, `canvas`, `icons`, and rendering hooks customize the appearance without changing the persisted graph format.
 
 The library exports graph types and immutable helpers including `createGraph`, `addNode`, `removeNode`, `upsertConnector`, `removeConnector`, `addConnection`, `removeConnection`, `validateGraph`, `serializeGraph`, and `deserializeGraph`. See [API and custom nodes](docs/api.md) for the full TypeScript API and extension example.
 

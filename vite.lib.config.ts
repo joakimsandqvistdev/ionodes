@@ -11,7 +11,15 @@ export default defineConfig({
       cssFileName: 'style'
     },
     rollupOptions: {
-      external: ['react', 'react-dom', '@xyflow/react'],
+      // Keep both React's runtime and JSX runtimes external. Bundling the JSX
+      // runtime duplicates React internals and breaks React 19 consumers.
+      external: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        '@xyflow/react'
+      ],
       output: { globals: { react: 'React', 'react-dom': 'ReactDOM', '@xyflow/react': 'XYFlow' } }
     }
   }

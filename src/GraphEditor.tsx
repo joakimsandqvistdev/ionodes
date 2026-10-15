@@ -120,6 +120,13 @@ export type GraphEditorProps = {
   nodeTypes?: NodeTypes;
   /** Selects a registered renderer for each graph node. Defaults to "ionode". */
   getNodeType?: (node: GraphNode) => string;
+  /** Render an optional in-node editor. Each node's editor starts collapsed. */
+  renderNodeEditor?: (
+    node: GraphNode,
+    updateNode: (patch: Partial<Omit<GraphNode, 'id' | 'connectors'>>) => void
+  ) => ReactNode;
+  /** Accessible label for the in-node editor toggle. Defaults to "Edit node". */
+  nodeEditorLabel?: string;
   /** Inline CSS properties and custom properties (for example `--ionodes-accent`). */
   theme?: GraphEditorTheme;
   /** Replaces the default canvas, grid, controls and minimap settings. */
@@ -158,10 +165,19 @@ export type GraphNodeRendererData = {
   renderGraphIcon?: GraphEditorProps['renderGraphIcon'];
   renderConnectorLabel?: GraphEditorProps['renderConnectorLabel'];
   icons?: GraphEditorIcons;
+  renderNodeEditor?: GraphEditorProps['renderNodeEditor'];
+  nodeEditorLabel?: string;
 };
 type FlowNode = Node<GraphNodeRendererData, string>;
 
-function GraphNodeView({ data, selected }: { data: GraphNodeRendererData; selected?: boolean }) {
+export function GraphNodeView({
+  data,
+  selected
+}: {
+  data: GraphNodeRendererData;
+  selected?: boolean;
+}) {
+  const [editorOpen, setEditorOpen] = useState(false);
   const { graphNode, invalid, renderGraphIcon, icons } = data;
   return (
     <div className={`ionodes-node${selected ? ' is-selected' : ''}${invalid ? ' has-error' : ''}`}>
@@ -208,6 +224,29 @@ function GraphNodeView({ data, selected }: { data: GraphNodeRendererData; select
             />
           ))}
       </div>
+      {data.renderNodeEditor && (
+        <div className="ionodes-node-editor-wrap">
+          <button
+            type="button"
+            className="ionodes-node-editor-toggle nodrag nopan"
+            aria-expanded={editorOpen}
+            aria-controls={`ionodes-node-editor-${graphNode.id}`}
+            onClick={() => setEditorOpen((open) => !open)}
+          >
+            <span>{data.nodeEditorLabel ?? 'Edit node'}</span>
+            <span aria-hidden="true">{editorOpen ? '⌃' : '⌄'}</span>
+          </button>
+          {editorOpen && (
+            <div
+              id={`ionodes-node-editor-${graphNode.id}`}
+              className="ionodes-node-editor nodrag nopan"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {data.renderNodeEditor(graphNode, data.updateGraphNode)}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -306,6 +345,8 @@ function GraphEditorInner({
   icons = {},
   renderGraphIcon,
   renderConnectorLabel,
+  renderNodeEditor,
+  nodeEditorLabel,
   showValidationMessages = true,
   showConnectionWarnings = true,
   showErrorMessages = true,
@@ -331,7 +372,10 @@ function GraphEditorInner({
     const current = selectionRef.current;
     const sameIds = (left: string[], right: string[]) =>
       left.length === right.length && left.every((id) => right.includes(id));
-    if (sameIds(current.nodeIds, next.nodeIds) && sameIds(current.connectionIds, next.connectionIds))
+    if (
+      sameIds(current.nodeIds, next.nodeIds) &&
+      sameIds(current.connectionIds, next.connectionIds)
+    )
       return;
     selectionRef.current = next;
     setSelection(next);
@@ -415,7 +459,9 @@ function GraphEditorInner({
           updateGraphNode: (patch) => updateGraphNode(item.id, patch),
           renderGraphIcon,
           renderConnectorLabel,
-          icons
+          icons,
+          renderNodeEditor,
+          nodeEditorLabel
         },
         selected: selection.nodeIds.includes(item.id),
         draggable: true
@@ -430,7 +476,9 @@ function GraphEditorInner({
       updateGraphNode,
       renderGraphIcon,
       renderConnectorLabel,
-      icons
+      icons,
+      renderNodeEditor,
+      nodeEditorLabel
     ]
   );
   const flowEdges = useMemo<Edge[]>(
@@ -663,10 +711,13 @@ function GraphEditorInner({
       previousFocus?.focus();
     };
   }, [showJson]);
-  const handleSelection = useCallback(({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
-    const next = { nodeIds: nodes.map((n) => n.id), connectionIds: edges.map((e) => e.id) };
-    updateSelection(next);
-  }, [updateSelection]);
+  const handleSelection = useCallback(
+    ({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
+      const next = { nodeIds: nodes.map((n) => n.id), connectionIds: edges.map((e) => e.id) };
+      updateSelection(next);
+    },
+    [updateSelection]
+  );
   const exportJson = () => {
     try {
       const value = serializeGraph(graph);
@@ -899,15 +950,18 @@ function GraphEditorInner({
               </button>
             </div>
           )}
-          {showValidationMessages && showConnectionWarnings && validationIssue && validationMessage !== null && (
-            <div
-              className={`ionodes-validation ${messageClassNames?.validation ?? ''}`}
-              role="status"
-            >
-              <span className="ionodes-error-mark">{icons.validation ?? icons.error ?? '!'}</span>
-              {validationMessage}
-            </div>
-          )}
+          {showValidationMessages &&
+            showConnectionWarnings &&
+            validationIssue &&
+            validationMessage !== null && (
+              <div
+                className={`ionodes-validation ${messageClassNames?.validation ?? ''}`}
+                role="status"
+              >
+                <span className="ionodes-error-mark">{icons.validation ?? icons.error ?? '!'}</span>
+                {validationMessage}
+              </div>
+            )}
           <input
             ref={fileInput}
             type="file"

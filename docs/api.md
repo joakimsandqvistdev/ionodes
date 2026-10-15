@@ -12,7 +12,27 @@ For controlled state, pass `graph` and update it from `onChange`:
 <GraphEditor graph={graph} onChange={setGraph} onSelectionChange={setSelection} />
 ```
 
-Props include `palette`, `validateConnection`, `showConnectionWarnings`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `showStatusBar`, `showEmptyState`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, `renderConnectorLabel`, `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames`. The bottom status bar is visible by default and can be hidden with `showStatusBar={false}`. The built-in empty-graph prompt can be hidden with `showEmptyState={false}`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+Props include `palette`, `validateConnection`, `showConnectionWarnings`, `onSelectionChange`, `onGraphEvent`, `showPalette`, `showInspector`, `showStatusBar`, `showEmptyState`, `className`, `theme`, `canvas`, `icons`, `renderGraphIcon`, `renderConnectorLabel`, `renderNodeEditor`, `nodeEditorLabel`, `showValidationMessages`, `showErrorMessages`, `renderMessage`, and `messageClassNames`. The bottom status bar is visible by default and can be hidden with `showStatusBar={false}`. The built-in empty-graph prompt can be hidden with `showEmptyState={false}`. Palette entries contain a label, optional description/icon, and a `create()` function that returns a generic `GraphNode`. Undo/redo is kept internally for uncontrolled mode and disabled in the toolbar for controlled mode; controlled consumers should provide their own history through `graph` and `onChange`.
+
+## Compact nodes with attached editors
+
+Use `renderNodeEditor` to put a node-specific configuration panel inside the built-in node. Nodes start compact and collapsed; the accessible toggle opens an overlay below the connector rows without expanding the node's layout or moving its connection handles. Open state is local UI state and is not included in serialized graph data. The callback receives the node and an update function for its generic graph fields.
+
+```tsx
+<GraphEditor
+  graph={graph}
+  onChange={setGraph}
+  nodeEditorLabel="Configure"
+  renderNodeEditor={(node, updateNode) => (
+    <label>
+      Node title
+      <input value={node.title} onChange={(event) => updateNode({ title: event.target.value })} />
+    </label>
+  )}
+/>
+```
+
+The editor overlay stops pointer actions from initiating node drags. Consumers should style their form controls and overlay using scoped `.ionodes-node-editor` selectors and existing theme variables.
 
 ## Validation and error messages
 
