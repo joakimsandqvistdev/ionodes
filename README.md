@@ -2,6 +2,8 @@
 
 A reusable, domain-neutral node graph editor for React, TypeScript, and [`@xyflow/react`](https://reactflow.dev/). It provides editable nodes and connectors, validation, undo and redo, and a versioned JSON format. The editor ships with a dark, customizable theme and a small interactive demo.
 
+[Source code](https://github.com/joakimsandqvistdev/ionodes) · [Changelog](CHANGELOG.md) · [License](LICENSE)
+
 ## Quick start
 
 ```bash

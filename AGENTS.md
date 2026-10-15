@@ -1,8 +1,10 @@
 # AGENTS.md
 
+These repository instructions are public guidance for human and AI contributors. Keep them focused on durable project requirements. Do not add credentials, private user data, or machine-specific local paths.
+
 ## Project purpose
 
-Build a reusable node graph editor library using React, TypeScript, and React Flow (`@xyflow/react`). The editor should support general-purpose graph data and draw visual inspiration from Unreal Engine Blueprints.
+Build a reusable node graph editor library using React, TypeScript, and React Flow (`@xyflow/react`). The editor should support general-purpose graph data and a clear visual-scripting interface.
 
 React and React Flow are deliberate project choices. Do not add abstractions or package boundaries intended to support other UI frameworks.
 
@@ -76,7 +78,7 @@ Do not add workflow execution, AI integrations, model-provider logic, database a
 - Give icon-only buttons and graph controls accessible names.
 - Make node and connector labels available to assistive technology.
 - Make the default theme customizable without hardcoding another product’s branding.
-- Use a Blueprint-inspired visual style without copying Unreal Engine assets, logos, or branding.
+- Use a visual-scripting style without copying third-party assets, logos, or branding.
 
 ## Public API and documentation
 
