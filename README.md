@@ -21,6 +21,16 @@ export function App() {
 
 The demo is available in the repository with `npm install` followed by `npm run dev`.
 
+## Releasing
+
+From a clean checkout on `main`, run the release script in PowerShell:
+
+```powershell
+npm run release -- patch
+```
+
+Use `minor` or `major` instead of `patch` when appropriate. The script updates `package.json` and `package-lock.json`, creates a release commit and matching `v*` tag, then pushes both to `origin`. Pushing the tag starts the GitHub Actions workflow, which builds, tests, and publishes the package to npm. Make sure the workflow succeeds before announcing the release.
+
 ## Customize the editor
 
 The editor is designed to be themed by the consuming React app. `theme` applies inline CSS properties and `--ionodes-*` custom properties to this editor instance, so separate editors can use separate themes. Built-in tokens are `--ionodes-bg`, `--ionodes-panel`, `--ionodes-panel-raised`, `--ionodes-border`, `--ionodes-text`, `--ionodes-muted`, `--ionodes-subtle`, `--ionodes-accent`, `--ionodes-accent-strong`, `--ionodes-danger`, `--ionodes-success`, `--ionodes-font-sans`, `--ionodes-font-mono`, `--ionodes-panel-padding`, `--ionodes-control-height`, `--ionodes-focus-ring`, and `--ionodes-radius`.
