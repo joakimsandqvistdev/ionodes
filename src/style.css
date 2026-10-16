@@ -267,6 +267,8 @@
   border-radius: 8px 8px 0 0;
 }
 .ionodes-node-header strong {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 11px;
   font-weight: 600;
 }
@@ -283,6 +285,7 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
+  margin-left: auto;
 }
 .ionodes-error-mark {
   display: grid;
@@ -298,7 +301,7 @@
     monospace;
 }
 .ionodes-node-header .ionodes-error-mark {
-  margin-left: auto;
+  margin-left: 0;
 }
 .ionodes-node-description {
   padding: 8px 11px 3px;

@@ -111,6 +111,8 @@ export type GraphEditorProps = {
   defaultGraph?: GraphDocument;
   onChange?: (graph: GraphDocument) => void;
   onSelectionChange?: (selection: { nodeIds: string[]; connectionIds: string[] }) => void;
+  /** Select a node from the consumer; omit to leave node selection uncontrolled. */
+  selectedNodeId?: string | null;
   onGraphEvent?: (event: {
     type: 'node-added' | 'node-removed' | 'connection-added' | 'connection-removed' | 'imported';
     graph: GraphDocument;
@@ -127,7 +129,7 @@ export type GraphEditorProps = {
   ) => ReactNode;
   /** Accessible label for the in-node editor toggle. Defaults to "Edit node". */
   nodeEditorLabel?: string;
-  /** Render consumer actions in the built-in node header, immediately after its icon. */
+  /** Render consumer actions at the right side of the built-in node header. */
   renderNodeActions?: (node: GraphNode) => ReactNode;
   /** Inline CSS properties and custom properties (for example `--ionodes-accent`). */
   theme?: GraphEditorTheme;
@@ -191,16 +193,16 @@ export function GraphNodeView({
             icons?.node ??
             '◇'}
         </span>
-        {data.renderNodeActions && (
-          <div className="ionodes-node-header-actions nodrag nopan">
-            {data.renderNodeActions(graphNode)}
-          </div>
-        )}
         <strong>{graphNode.title || 'Untitled node'}</strong>
         {invalid && (
           <span className="ionodes-error-mark" aria-label="Validation error">
             {icons?.error ?? '!'}
           </span>
+        )}
+        {data.renderNodeActions && (
+          <div className="ionodes-node-header-actions nodrag nopan">
+            {data.renderNodeActions(graphNode)}
+          </div>
         )}
       </div>
       {graphNode.description && (
@@ -340,6 +342,7 @@ function GraphEditorInner({
   defaultGraph,
   onChange,
   onSelectionChange,
+  selectedNodeId,
   onGraphEvent,
   validateConnection: rule,
   palette = defaultPalette,
@@ -390,6 +393,17 @@ function GraphEditorInner({
     setSelection(next);
     onSelectionChangeRef.current?.(next);
   }, []);
+  useEffect(() => {
+    if (selectedNodeId === undefined) return;
+    const requestedNodeId =
+      selectedNodeId && graph.nodes.some((node) => node.id === selectedNodeId)
+        ? selectedNodeId
+        : null;
+    updateSelection({
+      nodeIds: requestedNodeId ? [requestedNodeId] : [],
+      connectionIds: requestedNodeId ? [] : selectionRef.current.connectionIds
+    });
+  }, [graph.nodes, selectedNodeId, updateSelection]);
   const [positionOverrides, setPositionOverrides] = useState<Record<string, GraphNode['position']>>(
     {}
   );
