@@ -127,6 +127,8 @@ export type GraphEditorProps = {
   ) => ReactNode;
   /** Accessible label for the in-node editor toggle. Defaults to "Edit node". */
   nodeEditorLabel?: string;
+  /** Render consumer actions in the built-in node header, immediately after its icon. */
+  renderNodeActions?: (node: GraphNode) => ReactNode;
   /** Inline CSS properties and custom properties (for example `--ionodes-accent`). */
   theme?: GraphEditorTheme;
   /** Replaces the default canvas, grid, controls and minimap settings. */
@@ -167,6 +169,7 @@ export type GraphNodeRendererData = {
   icons?: GraphEditorIcons;
   renderNodeEditor?: GraphEditorProps['renderNodeEditor'];
   nodeEditorLabel?: string;
+  renderNodeActions?: GraphEditorProps['renderNodeActions'];
 };
 type FlowNode = Node<GraphNodeRendererData, string>;
 
@@ -188,6 +191,11 @@ export function GraphNodeView({
             icons?.node ??
             '◇'}
         </span>
+        {data.renderNodeActions && (
+          <div className="ionodes-node-header-actions nodrag nopan">
+            {data.renderNodeActions(graphNode)}
+          </div>
+        )}
         <strong>{graphNode.title || 'Untitled node'}</strong>
         {invalid && (
           <span className="ionodes-error-mark" aria-label="Validation error">
@@ -347,6 +355,7 @@ function GraphEditorInner({
   renderConnectorLabel,
   renderNodeEditor,
   nodeEditorLabel,
+  renderNodeActions,
   showValidationMessages = true,
   showConnectionWarnings = true,
   showErrorMessages = true,
@@ -461,7 +470,8 @@ function GraphEditorInner({
           renderConnectorLabel,
           icons,
           renderNodeEditor,
-          nodeEditorLabel
+          nodeEditorLabel,
+          renderNodeActions
         },
         selected: selection.nodeIds.includes(item.id),
         draggable: true
@@ -478,7 +488,8 @@ function GraphEditorInner({
       renderConnectorLabel,
       icons,
       renderNodeEditor,
-      nodeEditorLabel
+      nodeEditorLabel,
+      renderNodeActions
     ]
   );
   const flowEdges = useMemo<Edge[]>(

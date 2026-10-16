@@ -157,6 +157,28 @@ describe('GraphEditor', () => {
       'true'
     );
   });
+  it('renders consumer actions immediately after the node header icon', () => {
+    const graph = addNode(createGraph('workflow'), {
+      id: 'actions-node',
+      title: 'Image processor',
+      position: { x: 0, y: 0 },
+      connectors: []
+    });
+    const { container } = render(
+      <GraphNodeView
+        data={{
+          graphNode: graph.nodes[0]!,
+          updateGraphNode: vi.fn(),
+          renderNodeActions: () => <button type="button">Duplicate node</button>
+        }}
+      />
+    );
+    const header = container.querySelector('.ionodes-node-header');
+    expect(header?.children[0]).toHaveClass('ionodes-node-icon');
+    expect(header?.children[1]).toHaveClass('ionodes-node-header-actions');
+    expect(header?.children[1]).toHaveTextContent('Duplicate node');
+    expect(header?.children[2]).toHaveTextContent('Image processor');
+  });
   it('retains measured dimensions and does not loop on repeated empty selection notifications', () => {
     const graph = addNode(createGraph('workflow'), {
       id: 'node',

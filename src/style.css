@@ -278,6 +278,12 @@
   color: #a9c6ff;
   font-size: 13px;
 }
+.ionodes-node-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
 .ionodes-error-mark {
   display: grid;
   flex: 0 0 16px;
